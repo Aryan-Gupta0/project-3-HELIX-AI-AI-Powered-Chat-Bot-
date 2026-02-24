@@ -28,7 +28,7 @@ const App = () => {
   setLoading(true);
 
   try {
-    const response = await fetch("http://localhost:5000/api/ask", {
+    const response = await fetch("https://project-3-helix-ai-ai-powered-chat-bot.onrender.com//api/ask", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
