@@ -1,46 +1,59 @@
 import React, { useState } from 'react'
 import "./App.css"
 import Navbar from './components/Navbar'
-import { GoogleGenAI } from "@google/genai";
 import { BeatLoader } from "react-spinners";
 import Markdown from 'react-markdown'
 import { RiComputerFill } from "react-icons/ri";
 import { GiOpenBook, GiWhiteBook } from 'react-icons/gi';
 import { FaBloggerB } from 'react-icons/fa';
-import { URL } from './constants';
+
 
 const App = () => {
   const [screen, setScreen] = useState(1);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
-  const ai = new GoogleGenAI({ apiKey: URL });
+  
   let messages = [];
 
   const [data, setData] = useState(messages);
-  async function getResponse() {
-
-    if (prompt === "") {
-      alert("Please enter a prompt!");
-      return;
-    }
-
-    setData(prevData => [...prevData, { role: "user", content: prompt }])
-
-    setScreen(2);
-
-    setLoading(true);
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
-
-    setData(prevData => [...prevData, { role: "ai", content: response.text }])
-
-    setPrompt("");
-    console.log(messages)
-    setLoading(false);
+ 
+ async function getResponse() {
+  if (prompt === "") {
+    alert("Please enter a prompt!");
+    return;
   }
 
+  setData(prevData => [...prevData, { role: "user", content: prompt }]);
+  setScreen(2);
+  setLoading(true);
+
+  try {
+    const response = await fetch("http://localhost:5000/api/ask", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ question: prompt }),
+    });
+
+    const data = await response.json();
+
+    const aiText =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No response from AI";
+
+    setData(prevData => [...prevData, { role: "ai", content: aiText }]);
+  } catch (error) {
+    console.error(error);
+    setData(prevData => [
+      ...prevData,
+      { role: "ai", content: "Something went wrong!" },
+    ]);
+  }
+
+  setPrompt("");
+  setLoading(false);
+}
   return (
   <div className="min-h-screen flex flex-col">
     <Navbar />
@@ -88,7 +101,7 @@ const App = () => {
                           <p>{item.content}</p>
                         </div>
                         :
-                        <div className="ai rounded-xl border border-purple-800 w-fit max-w-[85%] sm:max-w-[60%] lg:max-w-[40%] mb-5 mr-auto p-4 break-words">
+                        <div className="ai rounded-xl border border-purple-800 w-fit max-w-[85%] sm:max-w-[60%] lg:max-w-[40%] mb-5 mr-auto p-4 wrap-break-words">
                           <p className='text-sm text-gray-400'>HELIX AI</p>
                           <Markdown>
                             {item.content}
