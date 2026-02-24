@@ -18,41 +18,55 @@ const App = () => {
   const [data, setData] = useState(messages);
  
  async function getResponse() {
-  if (prompt === "") {
+  if (prompt.trim() === "") {
     alert("Please enter a prompt!");
     return;
   }
 
-  setData(prevData => [...prevData, { role: "user", content: prompt }]);
+  setData(prev => [...prev, { role: "user", content: prompt }]);
   setScreen(2);
   setLoading(true);
 
   try {
-    const response = await fetch("https://project-3-helix-ai-ai-powered-chat-bot.onrender.com/api/ask", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ question: prompt }),
-    });
+    const response = await fetch(
+      "https://project-3-helix-ai-ai-powered-chat-bot.onrender.com/api/ask",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: prompt }),
+      }
+    );
+
+    if (!response.ok) {
+      setData(prev => [
+        ...prev,
+        { role: "ai", content: "Server error. Try again." },
+      ]);
+      return;
+    }
 
     const data = await response.json();
 
-    const aiText =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No response from AI";
+    let aiText = "No response from AI";
 
-    setData(prevData => [...prevData, { role: "ai", content: aiText }]);
+    if (
+      data?.candidates?.[0]?.content?.parts?.[0]?.text
+    ) {
+      aiText = data.candidates[0].content.parts[0].text;
+    }
+
+    setData(prev => [...prev, { role: "ai", content: aiText }]);
+
   } catch (error) {
     console.error(error);
-    setData(prevData => [
-      ...prevData,
+    setData(prev => [
+      ...prev,
       { role: "ai", content: "Something went wrong!" },
     ]);
+  } finally {
+    setLoading(false);
+    setPrompt("");
   }
-
-  setPrompt("");
-  setLoading(false);
 }
   return (
   <div className="min-h-screen flex flex-col">
